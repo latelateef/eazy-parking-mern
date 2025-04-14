@@ -51,7 +51,6 @@ router.post('/', auth, async (req, res) => {
             });
 
             // Create vehicle
-            
             const vehicle = await tx.vehicle.create({
                 data: {
                     bookId: booking.bookId,

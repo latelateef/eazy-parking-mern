@@ -25,7 +25,6 @@ const Profiledata = () => {
         <ChangePassword />
       </TabsContent>
     </Tabs>
-    
   );
 };
 

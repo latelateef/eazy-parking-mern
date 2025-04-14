@@ -3,6 +3,8 @@ import { BACKEND_URL } from "../../utils/backend";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { toast } from "react-hot-toast";
+import { LoadingOutlined } from '@ant-design/icons';
+import { Spin } from 'antd';
 
 const VehicleForm = ({parkingLotId}:any) => {
   const [formData, setFormData] = useState({
@@ -12,15 +14,17 @@ const VehicleForm = ({parkingLotId}:any) => {
     inTime: "",
     parkingLotId: parkingLotId,
   });
-  console.log(parkingLotId);
+  const [loading, setLoading] = useState(false);
+
+
   const handleChange = (e:any) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async(e:any) => {
+    setLoading(true);
     e.preventDefault();
-    console.log(formData);
 
     try {
       const response = await axios.post(`${BACKEND_URL}/api/user/book`, formData, {
@@ -41,11 +45,11 @@ const VehicleForm = ({parkingLotId}:any) => {
             inTime: "",
             parkingLotId: parkingLotId,
           });
+      setLoading(false);
     } catch (error) {
       console.error("Error submitting form:", error);
        toast.error("Failed to book vehicle. Please try again.");
     }
-     
   };
 
   return (
@@ -55,8 +59,6 @@ const VehicleForm = ({parkingLotId}:any) => {
           Vehicle Entry Form
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
-    
-
           <div>
             <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
               Vehicle Category
@@ -117,12 +119,20 @@ const VehicleForm = ({parkingLotId}:any) => {
             />
           </div>
 
+          {loading ? (
+          <div className="flex items-center justify-center mt-4">
+            <Spin indicator={<LoadingOutlined spin />} tip="Booking..."></Spin>
+            </div>
+          ):(
+
           <button
             type="submit"
             className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors"
           >
             Submit
           </button>
+          )
+        }
         </form>
       </div>
     </div>

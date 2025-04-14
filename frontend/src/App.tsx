@@ -15,7 +15,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 // import Admin from './pages/Admin'
 import AdminLogin from "./pages/adminlogin";
-import AdminRegister from "./pages/AdminRegister";
+// import AdminRegister from "./pages/AdminRegister";
 import AdminDashboard from "./pages/AdminDashboard";
 import Logout from "./pages/Logout";
 import Bookings from "./pages/Bookings";
@@ -34,6 +34,7 @@ import { Toaster } from "react-hot-toast";
 import AdminregUser from "./pages/AdminregUser";
 import AdminBook from "./pages/AdminBook";
 import AdminSetting from "./pages/AdminSetting";
+import NotFound from "./pages/NotFound";
 // import AdminBookregUser from "./pages/AdminBookregUser";
 
 const AppContent = () => {
@@ -98,14 +99,14 @@ const AppContent = () => {
                 </ProtectedRoute>
               }
             />
-            <Route
+            {/* <Route
               path="/admin/register"
               element={
                 <ProtectedRoute isAuthenticated={isAdminAuthenticated}>
                   <AdminRegister />
                 </ProtectedRoute>
               }
-            />
+            /> */}
             <Route
               path="/admin/dashboard"
               element={
@@ -186,9 +187,9 @@ const AppContent = () => {
                 </ProtectedRoute>
               }
             />
-            
+
             <Route path="/logout" element={<Logout />} />
-            <Route path="*" element={<div>404 Not Found</div>} />
+            <Route path="*" element={<NotFound/>} />
             <Route
               path="/bookings"
               element={
