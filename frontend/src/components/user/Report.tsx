@@ -7,7 +7,10 @@ import Cookies from "js-cookie";
 import { FilterDropdownProps } from "antd/es/table/interface";
 import Highlighter from "react-highlight-words";
 import { SearchOutlined } from "@ant-design/icons";
-import { Skeleton } from 'antd';
+import { Skeleton } from "antd";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { Download } from "lucide-react";
 
 declare module "jspdf" {
   interface jsPDF {
@@ -16,7 +19,6 @@ declare module "jspdf" {
 }
 const { Title, Text } = Typography;
 const BasicSkeleton: React.FC = () => <Skeleton />;
-
 
 const Report = () => {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -48,11 +50,11 @@ const Report = () => {
       const upcoming = [];
       const ongoing = [];
       const past = [];
-  
+
       for (const b of bookings) {
         const inTime = new Date(b.inTime);
         const outTime = b.outTime ? new Date(b.outTime) : null;
-  
+
         if (inTime > now) {
           upcoming.push(b);
         } else if (outTime && outTime < now) {
@@ -61,14 +63,14 @@ const Report = () => {
           ongoing.push(b);
         }
       }
-  
+
       setOngoing(ongoing);
       setPast(past);
       setUpcoming(upcoming);
-    }
+    };
     classifyBookings();
   }, [bookings]);
-  
+
   useEffect(() => {
     const fetchReportData = async () => {
       try {
@@ -88,8 +90,6 @@ const Report = () => {
     fetchReportData();
   }, []);
 
-
-
   const exportCSV = () => {
     const csv = Papa.unparse(
       bookings.map((b) => ({
@@ -99,7 +99,7 @@ const Report = () => {
         "Vehicle Category": b.category || "N/A",
         "In Time": new Date(b.inTime).toLocaleDateString(),
         "Out Time": new Date(b.outTime).toLocaleDateString() || "-",
-        "Total Spent": `₹${b.totalSpent || 0}`,
+        "Total Spent": `Rs ${b.totalSpent || 0}`,
       }))
     );
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -200,7 +200,7 @@ const Report = () => {
       title: "Total Spent",
       dataIndex: "totalSpent",
       render: (val: number) => `₹${val || 0}`,
-    }
+    },
   ];
 
   const outTimeColumn = {
@@ -215,6 +215,73 @@ const Report = () => {
     ...bookingsColumns.slice(5),
   ];
 
+  const exportPDF = () => {
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.setTextColor(40, 40, 40);
+    doc.text("Parking Booking Report", 14, 22);
+
+    const sections = [
+      { title: "Ongoing Bookings", data: ongoing },
+      { title: "Upcoming Bookings", data: upcoming },
+      { title: "Past Bookings", data: past },
+    ];
+
+    let finalY = 30;
+
+    sections.forEach((section, _index) => {
+      if (section.data.length > 0) {
+        doc.setTextColor(0, 112, 192); // blue
+        doc.setFontSize(14);
+        doc.text(section.title, 14, finalY);
+        finalY += 6;
+
+        autoTable(doc, {
+          startY: finalY,
+          head: [
+            [
+              "Company Name",
+              "Reg No",
+              "Category",
+              "Location",
+              "In Time",
+              ...(section.title === "Past Bookings" ? ["Out Time"] : []),
+              "Total Spent",
+            ],
+          ],
+          body: section.data.map((b) => [
+            b.company || "N/A",
+            b.registrationNumber || "N/A",
+            b.category || "N/A",
+            b.location || "N/A",
+            new Date(b.inTime).toLocaleString(),
+            ...(section.title === "Past Bookings"
+              ? [new Date(b.outTime).toLocaleString()]
+              : []),
+            `Rs ${b.totalSpent || 0}`,
+          ]),
+          theme: "grid",
+          styles: {
+            fillColor: [240, 240, 240],
+            textColor: 20,
+            fontSize: 10,
+          },
+          headStyles: {
+            fillColor: [0, 112, 192], // blue header
+            textColor: 255,
+            fontStyle: "bold",
+          },
+          margin: { left: 14, right: 14 },
+        });
+
+        finalY = doc.lastAutoTable.finalY + 10;
+      }
+    });
+
+    doc.save("Booking_Report.pdf");
+  };
+
   return (
     <div style={{ padding: 24 }}>
       <Space
@@ -225,9 +292,18 @@ const Report = () => {
         }}
       >
         <Title level={2}>Report</Title>
-        <Button type="primary" onClick={exportCSV}>
-          Export CSV
-        </Button>
+        <Space>
+          <Button type="primary" onClick={exportCSV}>
+            Export CSV
+          </Button>
+          <Button
+            onClick={exportPDF}
+            type="dashed"
+            icon={<Download className="w-4 h-4" />}
+          >
+            Export PDF
+          </Button>
+        </Space>
       </Space>
 
       {loading ? (
@@ -245,9 +321,7 @@ const Report = () => {
             rowKey="id"
             pagination={{ pageSize: 6 }}
             bordered
-            title={() => (
-              <Text strong>Ongoing Bookings</Text>
-            )}
+            title={() => <Text strong>Ongoing Bookings</Text>}
             className="my-4"
           />
           <Table
@@ -256,9 +330,7 @@ const Report = () => {
             rowKey="id"
             pagination={{ pageSize: 6 }}
             bordered
-            title={() => (
-              <Text strong>Upcoming Bookings</Text>
-            )}
+            title={() => <Text strong>Upcoming Bookings</Text>}
             className="my-4"
           />
           <Table
@@ -267,14 +339,11 @@ const Report = () => {
             rowKey="id"
             pagination={{ pageSize: 6 }}
             bordered
-            title={() => (
-              <Text strong>Past Bookings</Text>
-            )}
+            title={() => <Text strong>Past Bookings</Text>}
             className="my-4"
           />
         </>
       )}
-
     </div>
   );
 };
