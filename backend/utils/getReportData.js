@@ -10,7 +10,7 @@ export async function getUserReportData(userId) {
         registrationNumber: b.vehicle?.registrationNumber || "N/A",
         location: b.parkingLot.location,
         company: b.vehicle?.vehicleCompanyName || "N/A",
-        category: b.vehicle?.vehicleCategory || "N/A",
+        category: b.vehicle?.vehicleCategory?.vehicleCat || "N/A",
         inTime: b.vehicle?.inTime,
         outTime: b.vehicle?.outTime,
         totalSpent: b.parkingLot.price, // assuming flat price
@@ -20,7 +20,11 @@ export async function getUserReportData(userId) {
     const bookings = await prisma.booking.findMany({
       where: { userId },
       include: {
-        vehicle: true,
+        vehicle: {
+          include: {
+            vehicleCategory: true,
+          },
+        },
         parkingLot: true,
       },
     });

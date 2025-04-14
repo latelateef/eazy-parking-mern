@@ -20,7 +20,6 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Logout from "./pages/Logout";
 import Bookings from "./pages/Bookings";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Cookies from "js-cookie";
 import Book from "./pages/Book";
 import Reports from "./pages/Reports";
 import Setting from "./pages/Setting";
@@ -40,9 +39,6 @@ import NotFound from "./pages/NotFound";
 const AppContent = () => {
   const { theme } = useContext(ThemeContext);
   const isDark = theme === "dark";
-  const isUserAuthenticated = Cookies.get("token") !== null;
-  const isAdminAuthenticated = Cookies.get("adminToken") !== null;
-
   const muiTheme = useMemo(
     () =>
       createTheme({
@@ -83,34 +79,16 @@ const AppContent = () => {
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute
-                  isAuthenticated={isUserAuthenticated}
-                  redirectPath="/login"
-                >
+                <ProtectedRoute redirectPath="/login">
                   <Dashboard />
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/admin/login"
-              element={
-                <ProtectedRoute isAuthenticated={isAdminAuthenticated}>
-                  <AdminLogin />
-                </ProtectedRoute>
-              }
-            />
-            {/* <Route
-              path="/admin/register"
-              element={
-                <ProtectedRoute isAuthenticated={isAdminAuthenticated}>
-                  <AdminRegister />
-                </ProtectedRoute>
-              }
-            /> */}
+            <Route path="/admin/login" element={<AdminLogin />} />
             <Route
               path="/admin/dashboard"
               element={
-                <ProtectedRoute isAuthenticated={isAdminAuthenticated}>
+                <ProtectedRoute>
                   <AdminDashboard />
                 </ProtectedRoute>
               }
@@ -118,7 +96,7 @@ const AppContent = () => {
             <Route
               path="/admin/category"
               element={
-                <ProtectedRoute isAuthenticated={isAdminAuthenticated}>
+                <ProtectedRoute>
                   <AdminVehicleCategory />
                 </ProtectedRoute>
               }
@@ -126,7 +104,7 @@ const AppContent = () => {
             {/* <Route
               path="/admin/users"
               element={
-                <ProtectedRoute isAuthenticated={isAdminAuthenticated}>
+                <ProtectedRoute >
                   <AdminBookregUser />
                 </ProtectedRoute>
               }
@@ -134,7 +112,7 @@ const AppContent = () => {
             <Route
               path="/admin/bookings"
               element={
-                <ProtectedRoute isAuthenticated={isAdminAuthenticated}>
+                <ProtectedRoute>
                   <AdminBookings />
                 </ProtectedRoute>
               }
@@ -142,7 +120,7 @@ const AppContent = () => {
             <Route
               path="/admin/bookings/:id"
               element={
-                <ProtectedRoute isAuthenticated={isAdminAuthenticated}>
+                <ProtectedRoute>
                   <AdminBook />
                 </ProtectedRoute>
               }
@@ -150,7 +128,7 @@ const AppContent = () => {
             <Route
               path="/admin/vehicle"
               element={
-                <ProtectedRoute isAuthenticated={isAdminAuthenticated}>
+                <ProtectedRoute>
                   <AdminManageVehicle />
                 </ProtectedRoute>
               }
@@ -158,7 +136,7 @@ const AppContent = () => {
             <Route
               path="/admin/reports"
               element={
-                <ProtectedRoute isAuthenticated={isAdminAuthenticated}>
+                <ProtectedRoute>
                   <AdminReports />
                 </ProtectedRoute>
               }
@@ -166,7 +144,7 @@ const AppContent = () => {
             <Route
               path="/admin/settings"
               element={
-                <ProtectedRoute isAuthenticated={isAdminAuthenticated}>
+                <ProtectedRoute>
                   <AdminSetting />
                 </ProtectedRoute>
               }
@@ -174,7 +152,7 @@ const AppContent = () => {
             <Route
               path="/admin/parkinglot"
               element={
-                <ProtectedRoute isAuthenticated={isAdminAuthenticated}>
+                <ProtectedRoute>
                   <AdminParkingLot />
                 </ProtectedRoute>
               }
@@ -182,21 +160,18 @@ const AppContent = () => {
             <Route
               path="/admin/registered-users"
               element={
-                <ProtectedRoute isAuthenticated={isAdminAuthenticated}>
+                <ProtectedRoute>
                   <AdminregUser />
                 </ProtectedRoute>
               }
             />
 
             <Route path="/logout" element={<Logout />} />
-            <Route path="*" element={<NotFound/>} />
+            <Route path="*" element={<NotFound />} />
             <Route
               path="/bookings"
               element={
-                <ProtectedRoute
-                  isAuthenticated={isUserAuthenticated}
-                  redirectPath="/login"
-                >
+                <ProtectedRoute redirectPath="/login">
                   <Bookings />
                 </ProtectedRoute>
               }
@@ -204,10 +179,7 @@ const AppContent = () => {
             <Route
               path="/bookings/:id"
               element={
-                <ProtectedRoute
-                  isAuthenticated={isUserAuthenticated}
-                  redirectPath="/login"
-                >
+                <ProtectedRoute redirectPath="/login">
                   <Book />
                 </ProtectedRoute>
               }
@@ -215,10 +187,7 @@ const AppContent = () => {
             <Route
               path="/settings"
               element={
-                <ProtectedRoute
-                  isAuthenticated={isUserAuthenticated}
-                  redirectPath="/login"
-                >
+                <ProtectedRoute redirectPath="/login">
                   <Setting />
                 </ProtectedRoute>
               }
@@ -226,10 +195,7 @@ const AppContent = () => {
             <Route
               path="/reports"
               element={
-                <ProtectedRoute
-                  isAuthenticated={isUserAuthenticated}
-                  redirectPath="/login"
-                >
+                <ProtectedRoute redirectPath="/login">
                   <Reports />
                 </ProtectedRoute>
               }
