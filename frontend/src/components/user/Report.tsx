@@ -18,7 +18,7 @@ declare module "jspdf" {
   }
 }
 const { Title, Text } = Typography;
-const BasicSkeleton: React.FC = () => <Skeleton />;
+const BasicSkeleton: React.FC = () => <Skeleton active />;
 
 const Report = () => {
   const [bookings, setBookings] = useState<any[]>([]);
