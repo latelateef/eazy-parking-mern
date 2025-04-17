@@ -11,7 +11,6 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Download } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { generateInvoicePDF } from "@/components/user/Invoice";
 
 declare module "jspdf" {
   interface jsPDF {
@@ -28,23 +27,6 @@ const Report = () => {
   const [searchText, setSearchText] = useState("");
   const [searchedColumn, setSearchedColumn] = useState("");
   const searchInput = useRef<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await axios.get(`${BACKEND_URL}/api/user/profile`, {
-          headers: {
-            Authorization: `Bearer ${Cookies.get("token")}`,
-          },
-        });
-        setProfile(res.data);
-      } catch (err) {
-        console.error("Error fetching profile", err);
-      }
-    };
-
-    fetchProfile();
-  }, []);
 
   const handleSearch = (
     selectedKeys: string[],
@@ -59,6 +41,20 @@ const Report = () => {
     clearFilters();
     setSearchText("");
   };
+
+  const formatData = (data: any[]) => {
+    return data.map((b) => ({
+      key: b.bookId,
+      name: `${b.user?.firstName || "N/A"} ${b.user?.lastName || ""}`,
+      company: b.vehicle?.vehicleCompanyName || "N/A",
+      registrationNumber: b.vehicle?.registrationNumber || "N/A",
+      category: b.vehicle?.vehicleCategory?.vehicleCat || "N/A",
+      location: b.parkingLot?.location || "N/A",
+      inTime: b.vehicle?.inTime ? new Date(b.vehicle.inTime).toLocaleString() : "-",
+      outTime: b.vehicle?.outTime ? new Date(b.vehicle.outTime).toLocaleString() : "-",
+      totalSpent: `Rs.${b.parkingLot?.price || 0}`,
+    }));
+  }
   // Helper function to classify bookings
   useEffect(() => {
     const classifyBookings = () => {
@@ -90,12 +86,12 @@ const Report = () => {
   useEffect(() => {
     const fetchReportData = async () => {
       try {
-        const res = await axios.get(`${BACKEND_URL}/api/user/report`, {
+        const res = await axios.get(`${BACKEND_URL}/api/admin/generateReport`, {
           headers: {
-            Authorization: `Bearer ${Cookies.get("token")}`,
+            Authorization: `Bearer ${Cookies.get("adminToken")}`,
           },
         });
-        setBookings(res.data);
+        setBookings(formatData(res.data));
       } catch (error) {
         console.error("Failed to fetch users", error);
       } finally {
@@ -109,13 +105,15 @@ const Report = () => {
   const exportCSV = () => {
     const csv = Papa.unparse(
       bookings.map((b) => ({
-        "Company Name": b.company || "N/A",
-        "Registration Number": b.registrationNumber || "N/A",
-        Location: b.location,
-        "Vehicle Category": b.category || "N/A",
-        "In Time": new Date(b.inTime).toLocaleDateString(),
-        "Out Time": new Date(b.outTime).toLocaleDateString() || "-",
-        "Total Spent": `Rs ${b.totalSpent || 0}`,
+        "Parking Number": b.key || "N/A",
+        Name: `${b.name}` || "N/A",
+        Company: b.company || "N/A",
+        "Reg No": b.registrationNumber || "N/A",
+        Category: b.category || "N/A",
+        Location: b.location || "N/A",
+        "In Time": b.inTime || "-",
+        "Out Time": b.outTime || "-",
+        "Total Spent": b.totalSpent,
       }))
     );
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -188,6 +186,16 @@ const Report = () => {
 
   const bookingsColumns = [
     {
+      title: "Parking Number",
+      dataIndex: "key",
+      ...getColumnSearchProps("key"),
+    },
+    {
+      title: "Name",
+      dataIndex: "name",
+      ...getColumnSearchProps("name"),
+    },
+    {
       title: "Company",
       dataIndex: "company",
       ...getColumnSearchProps("company"),
@@ -215,23 +223,7 @@ const Report = () => {
     {
       title: "Total Spent",
       dataIndex: "totalSpent",
-      render: (val: number) => `₹${val || 0}`,
-    },
-    {
-      title: "Invoice",
-      dataIndex: "invoice",
-      render: (_: any, record: any) =>
-        profile ? (
-          <Button
-            size="small"
-            onClick={() => generateInvoicePDF(record, profile)}
-            icon={<Download className="w-3 h-3" />}
-          >
-            Invoice
-          </Button>
-        ) : (
-          "Loading..."
-        ),
+      render: (val: number) => `${val || 0}`,
     },
   ];
 
@@ -273,6 +265,8 @@ const Report = () => {
           startY: finalY,
           head: [
             [
+              "Parking Number",
+              "Name",
               "Company Name",
               "Reg No",
               "Category",
@@ -283,15 +277,15 @@ const Report = () => {
             ],
           ],
           body: section.data.map((b) => [
+            b.key || "N/A",
+            b.name || "N/A",
             b.company || "N/A",
             b.registrationNumber || "N/A",
             b.category || "N/A",
             b.location || "N/A",
-            new Date(b.inTime).toLocaleString(),
-            ...(section.title === "Past Bookings"
-              ? [new Date(b.outTime).toLocaleString()]
-              : []),
-            `Rs ${b.totalSpent || 0}`,
+            b.inTime || "-",
+            ...(section.title === "Past Bookings" ? [b.outTime || "-"] : []),
+            `₹${b.totalSpent}`,
           ]),
           theme: "grid",
           styles: {
@@ -314,37 +308,39 @@ const Report = () => {
     doc.save("Booking_Report.pdf");
   };
 
+
+
   return (
     <div className="flex flex-col">
-      <Space className="flex items-center justify-end mt-8 -mb-4 mr-10">
-        <Button type="primary" onClick={exportCSV}>
-          Export CSV
-        </Button>
-        <Button
-          onClick={exportPDF}
-          type="dashed"
-          icon={<Download className="w-4 h-4" />}
-        >
-          Export PDF
-        </Button>
-      </Space>
-      <Tabs defaultValue="ongoing" className="w-full p-10">
-        <center>
-          <TabsList className="bg-zinc-200 dark:bg-zinc-800">
-            <TabsTrigger value="ongoing" className="hover:cursor-pointer w-44">
-              Ongoing Bookings
-            </TabsTrigger>
-            <TabsTrigger value="upcoming" className="hover:cursor-pointer w-44">
-              Upcoming Bookings
-            </TabsTrigger>
-            <TabsTrigger value="past" className="hover:cursor-pointer w-44">
-              Past Bookings
-            </TabsTrigger>
-          </TabsList>
-        </center>
+        <Space className="flex items-center justify-end mt-8 -mb-4 mr-10">
+          <Button type="primary" onClick={exportCSV}>
+            Export CSV
+          </Button>
+          <Button
+            onClick={exportPDF}
+            type="dashed"
+            icon={<Download className="w-4 h-4" />}
+          >
+            Export PDF
+          </Button>
+        </Space>
+    <Tabs defaultValue="ongoing" className="w-full p-10">
+      <center>
+        <TabsList className="bg-zinc-200 dark:bg-zinc-800">
+          <TabsTrigger value="ongoing" className="hover:cursor-pointer w-44">
+            Ongoing Bookings
+          </TabsTrigger>
+          <TabsTrigger value="upcoming" className="hover:cursor-pointer w-44">
+            Upcoming Bookings
+          </TabsTrigger>
+          <TabsTrigger value="past" className="hover:cursor-pointer w-44">
+            Past Bookings
+          </TabsTrigger>
+        </TabsList>
+      </center>
 
-        <TabsContent value="ongoing">
-          <Table
+      <TabsContent value="ongoing">
+         <Table
             columns={bookingsColumns}
             dataSource={ongoing}
             rowKey="id"
@@ -352,11 +348,11 @@ const Report = () => {
             bordered
             loading={loading}
             className="my-4"
-          />
-        </TabsContent>
+            />
+      </TabsContent>
 
-        <TabsContent value="upcoming">
-          <Table
+      <TabsContent value="upcoming">
+      <Table
             columns={bookingsColumns}
             dataSource={upcoming}
             rowKey="id"
@@ -364,11 +360,11 @@ const Report = () => {
             bordered
             loading={loading}
             className="my-4"
-          />
-        </TabsContent>
+            />
+      </TabsContent>
 
-        <TabsContent value="past">
-          <Table
+      <TabsContent value="past">
+      <Table
             columns={pastBookingColumns}
             dataSource={past}
             rowKey="id"
@@ -377,8 +373,8 @@ const Report = () => {
             loading={loading}
             className="my-4"
           />
-        </TabsContent>
-      </Tabs>
+      </TabsContent>
+    </Tabs>
     </div>
   );
 };

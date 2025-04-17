@@ -20,6 +20,7 @@ import { styled } from "@mui/material/styles";
 import ForgotPassword from "../components/auth/ForgotPassword";
 import AppTheme from "../shared-theme/AppTheme";
 import ColorModeSelect from "../shared-theme/ColorModeSelect";
+import { Spin } from "antd";
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: "flex",
@@ -65,9 +66,15 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
 
 export default function SignIn(props: { disableCustomTheme?: boolean }) {
   const navigate = useNavigate();
+  React.useEffect(() => {
+    if (Cookies.get("adminToken")) {
+      navigate("/admin/dashboard");
+    }
+  }, []);
 
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
 
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState("");
@@ -113,6 +120,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
     if (!validateInputs()) return;
 
     try {
+      setLoading(true);
       const res = await axios.post(`${BACKEND_URL}/api/admin/auth/login`, {
         email,
         password,
@@ -123,6 +131,8 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
       navigate("/admin/dashboard");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Login failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -196,8 +206,13 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
             />
             <ForgotPassword open={open} handleClose={handleClose} />
 
-            <Button type="submit" fullWidth variant="contained">
-              Sign in
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              disabled={loading}
+            >
+              {loading ? <Spin /> : "Sign in"}
             </Button>
 
             <Link
@@ -207,7 +222,9 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
               variant="body2"
               sx={{ alignSelf: "center" }}
             >
-              <span className="text-black dark:text-zinc-300 underline underline-offset-2 hover:no-underline">Forgot your password?</span>
+              <span className="text-black dark:text-zinc-300 underline underline-offset-2 hover:no-underline">
+                Forgot your password?
+              </span>
             </Link>
 
             {error && (
@@ -222,11 +239,14 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
             )}
           </Box>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-
             <Typography sx={{ textAlign: "center" }}>
               Back to{" "}
               <Link variant="body2" sx={{ alignSelf: "center" }}>
-                <LinkR to="/"><span className="text-black dark:text-zinc-300 underline underline-offset-2 hover:no-underline">Home</span></LinkR>
+                <LinkR to="/">
+                  <span className="text-black dark:text-zinc-300 underline underline-offset-2 hover:no-underline">
+                    Home
+                  </span>
+                </LinkR>
               </Link>
             </Typography>
           </Box>
